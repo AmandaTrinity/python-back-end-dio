@@ -38,7 +38,7 @@ def possibilidade_sacar(*, valor_saque, saldo, numero_saques, limite_saque, limi
     
     return False
 
-#2. Atualização de Estado
+#2. Atualização de Estado. Key only
 def sacar(*, saldo, valor_saque, extrato, numero_saques):
     saldo -= valor_saque
     numero_saques += 1
@@ -46,20 +46,24 @@ def sacar(*, saldo, valor_saque, extrato, numero_saques):
     print('Saque concluído.')    
     return saldo, extrato, numero_saques
 
+#positional only
+def depositar(saldo, valor_deposito, extrato, /):
+    if valor_deposito > 0:
+        saldo += valor_deposito
+        extrato += f'Valor depositado: R${ valor_deposito:.2f}\n'
+        print('Depósito realizado')
+    else:
+        print('Por favor, digite um valor válido.')
+    return saldo, extrato
+
 while True:
 
     opcao = input(menu)
 
     if opcao == "d":
         valor_deposito = float(input('Digite o valor a ser depositado: '))
-
-        if valor_deposito > 0:
-            saldo += valor_deposito
-            extrato += f'Valor depositado: R${ valor_deposito:.2f}\n'
-            print('Depósito realizado')
-        else:
-            print('Por favor, digite um valor válido.')
-
+        saldo, extrato = depositar(saldo, valor_deposito, extrato)
+        
     elif opcao == "s":
         valor_saque = float(input('Digite o valor a ser sacado: '))
 
