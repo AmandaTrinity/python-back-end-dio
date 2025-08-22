@@ -20,8 +20,6 @@ def possibilidade_sacar(*, valor_saque, saldo, numero_saques, limite_saque, limi
     excedeu_saldo = valor_saque > saldo
     excedeu_limite_valor = valor_saque > limite_saque
     excedeu_numero_saques = numero_saques >= limite_num_saques
-    excedeu_limite_valor = valor_saque > limite_saque
-    excedeu_saldo = valor_saque > saldo
 
     if excedeu_saldo:
         print('Não será possível sacar, por falta de saldo')
@@ -50,12 +48,19 @@ def sacar(*, saldo, valor_saque, extrato, numero_saques):
 def depositar(saldo, valor_deposito, extrato, /):
     if valor_deposito > 0:
         saldo += valor_deposito
-        extrato += f'Valor depositado: R${ valor_deposito:.2f}\n'
+        extrato += f'Valor depositado: R${valor_deposito:.2f}\n'
         print('Depósito realizado')
     else:
         print('Por favor, digite um valor válido.')
     return saldo, extrato
 
+#positional and keyword
+def exibir_extrato(saldo, /, *, extrato):
+    print('\n=========== EXTRATO ===========')
+    print('Não foi realizado nenhum depósito ou saque.\n' if not extrato else extrato)
+    print(f'Saldo: R${saldo:.2f}')
+    print('================================')
+    
 while True:
 
     opcao = input(menu)
@@ -75,13 +80,10 @@ while True:
             saldo, extrato, numero_saques = sacar(saldo=saldo, valor_saque=valor_saque, extrato=extrato, numero_saques=numero_saques)
 
     elif opcao == "e":
-        print('\n=========== EXTRATO ===========')
-        print('Não foi realizado nenhum depósito ou saque.\n' if not extrato else extrato)
-        print(f'Saldo: R${saldo:.2f}')
+        exibir_extrato(saldo, extrato=extrato)
     
     elif opcao == "q":
         print('\nSaindo do sistema... Obrigado por usar o nosso serviço!')
-        print('Saindo do sistema... Obrigado por usar o nosso serviço')
 
     else:
         print("Operação inválida, por favor selecione novamente a operação desejada.")
