@@ -1,11 +1,16 @@
 menu = """
 [MENU]
+[c] Criar conta
 [d] Depositar
 [s] Sacar
 [e] Extrato
 [q] Sair
 
 => """
+
+
+usuarios_cadastrados = {}
+
 
 saldo = 0
 LIMITE_VALOR_SAQUE = 500
@@ -60,7 +65,30 @@ def exibir_extrato(saldo, /, *, extrato):
     print('Não foi realizado nenhum depósito ou saque.\n' if not extrato else extrato)
     print(f'Saldo: R${saldo:.2f}')
     print('================================')
+
+# Cadastro no  banco de dados
+def cadastro_usuario(*,cpf, nome, data_nascimento, endereco, usuarios_cadastrados):
+    usuarios_cadastrados[cpf] = {'nome': nome, 'data_nascimento': data_nascimento, 'endereco': endereco}
+    print("\nUsuário criado com sucesso!")
+    return usuarios_cadastrados
+
+#Buscar esse cpf no banco de dados para ver se já existe
+def filtrar_usuario(cpf, usuarios):
+    return usuarios.get(cpf)
+
+# Lógica de negócio criação de usuário
+def fluxo_criacao_usuario(usuarios_cadastrados):
+    cpf = input('Digite o número do seu cpf (somente números): ')
     
+    if filtrar_usuario(cpf, usuarios_cadastrados):
+        print('\nJá existe usuário com esse CPF!')
+        return
+    nome = input('Digite o seu nome: ')
+    data_nascimento = input('Digite a sua data de nascimento: ')
+    endereco = input('Digite o seu endereço: ')
+
+    cadastro_usuario(cpf=cpf, nome=nome, data_nascimento=data_nascimento, endereco=endereco, usuarios_cadastrados=usuarios_cadastrados)
+
 while True:
 
     opcao = input(menu)
@@ -84,6 +112,8 @@ while True:
     
     elif opcao == "q":
         print('\nSaindo do sistema... Obrigado por usar o nosso serviço!')
+    elif opcao == 'c':
+        novos_usuarios = fluxo_criacao_usuario(usuarios_cadastrados)
 
     else:
         print("Operação inválida, por favor selecione novamente a operação desejada.")
