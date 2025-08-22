@@ -1,6 +1,7 @@
 menu = """
 [MENU]
-[c] Criar conta
+[a] Nova Conta
+[c] Novo Usuário
 [d] Depositar
 [s] Sacar
 [e] Extrato
@@ -10,7 +11,7 @@ menu = """
 
 
 usuarios_cadastrados = {}
-
+conta_corrente = {}
 
 saldo = 0
 LIMITE_VALOR_SAQUE = 500
@@ -70,7 +71,6 @@ def exibir_extrato(saldo, /, *, extrato):
 def cadastro_usuario(*,cpf, nome, data_nascimento, endereco, usuarios_cadastrados):
     usuarios_cadastrados[cpf] = {'nome': nome, 'data_nascimento': data_nascimento, 'endereco': endereco}
     print("\nUsuário criado com sucesso!")
-    return usuarios_cadastrados
 
 #Buscar esse cpf no banco de dados para ver se já existe
 def filtrar_usuario(cpf, usuarios):
@@ -88,6 +88,22 @@ def fluxo_criacao_usuario(usuarios_cadastrados):
     endereco = input('Digite o seu endereço: ')
 
     cadastro_usuario(cpf=cpf, nome=nome, data_nascimento=data_nascimento, endereco=endereco, usuarios_cadastrados=usuarios_cadastrados)
+
+def criar_conta_corrente(agencia, numero_conta, conta_corrente, usuario, cpf):
+    conta_corrente[cpf] = {'agencia': agencia, 'numero_conta': numero_conta, 'usuario': usuario }
+    print("\nConta criada com sucesso!")
+    print(f"Agência: {agencia}\nC/C:     {numero_conta}")
+
+def fluxo_criacao_conta_corrente(conta_corrente, usuarios_cadastrados):
+    cpf = input('Digite o número do seu cpf (somente números): ')
+    usuario = filtrar_usuario(cpf, usuarios_cadastrados)
+    if not usuario:
+        print('Usuario não encontrado, fluxo de criação de conta encerrado')
+        return
+    numero_conta = len(conta_corrente) + 1
+    agencia = '0001'
+
+    criar_conta_corrente(agencia, numero_conta, conta_corrente, usuario, cpf)
 
 while True:
 
@@ -112,8 +128,10 @@ while True:
     
     elif opcao == "q":
         print('\nSaindo do sistema... Obrigado por usar o nosso serviço!')
+        break
     elif opcao == 'c':
-        novos_usuarios = fluxo_criacao_usuario(usuarios_cadastrados)
-
+        fluxo_criacao_usuario(usuarios_cadastrados)
+    elif opcao == 'a':
+        fluxo_criacao_conta_corrente(conta_corrente, usuarios_cadastrados)
     else:
         print("Operação inválida, por favor selecione novamente a operação desejada.")
