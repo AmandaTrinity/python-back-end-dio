@@ -64,6 +64,11 @@ class Historico:
     def adicionar_transacao(self, transacao):
         self._transacoes.append({"tipo": transacao.__class__.__name__,"valor": transacao.valor,"data": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),})
 
+    def gerador_relatorio(self,tipo_transacao=None):
+        for transacao in self._transacoes:
+            if tipo_transacao is None or transacao['tipo'].lower() == tipo_transacao.lower():
+                yield transacao
+
 class Conta:
     def __init__(self, numero: int, cliente: 'Cliente', saldo_inicial: float = 0.0):
         self._saldo = float(saldo_inicial)
@@ -245,13 +250,21 @@ def exibir_extrato(clientes):
         return
 
     print("\n================ EXTRATO ================")
-    transacoes = conta.historico.transacoes
 
-    if not transacoes:
-        print("Não foram realizadas movimentações.")
-    else:
-        for transacao in transacoes:
-            print(f"\n{transacao['tipo']}:\n\tValor: R$ {transacao['valor']:.2f}\n\tData: {transacao.get('data', 'N/A')}")
+    tipo_filtro = input("Deseja filtrar o extrato? ([d]eposito, [s]aque, ou [N]ão para todos): ").lower()
+    filtro = None
+    if tipo_filtro == 's':
+        filtro = Saque.__name__
+    elif tipo_filtro == 'd':
+        filtro = Deposito.__name__
+
+    tem_transacoes = False
+    for transacao in conta.historico.gerador_relatorio(tipo_transacao=filtro):
+        print(f"\n{transacao['tipo']}:\n\tValor: R$ {transacao['valor']:.2f}\n\tData: {transacao.get('data', 'N/A')}")
+        tem_transacoes = True
+
+    if not tem_transacoes:
+        print("Não foram realizadas movimentações para a seleção atual.")
 
     print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
     print("==========================================")
