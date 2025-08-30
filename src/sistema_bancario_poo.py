@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from functools import wraps
+
 
 menu = """
 [MENU]
@@ -188,7 +190,16 @@ class PessoaFisica(Cliente):
     def data_nascimento(self):
         return self._data_nascimento
 
+def log_transacao(funcao):
+    @wraps(funcao)
+    def exibir_nome_hora(*args, **kwargs):
+        print(f'Nome: {funcao.__name__}')
+        print(f'Hora: {datetime.now().strftime('%d-%m-%Y-%H:%M:%S')}')
+        return funcao(*args, **kwargs)
+    return exibir_nome_hora
+
 # Funções de interação com o usuário (adaptadas para POO)
+@log_transacao
 def depositar_valor(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -204,6 +215,7 @@ def depositar_valor(clientes):
     if conta:
         cliente.realizar_transacao(conta, transacao)
 
+@log_transacao
 def sacar_valor(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -219,6 +231,7 @@ def sacar_valor(clientes):
     if conta:
         cliente.realizar_transacao(conta, transacao)
 
+@log_transacao
 def exibir_extrato(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -243,6 +256,7 @@ def exibir_extrato(clientes):
     print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
     print("==========================================")
 
+@log_transacao
 def criar_cliente(clientes):
     cpf = input("Informe o CPF (somente número): ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -259,6 +273,7 @@ def criar_cliente(clientes):
     clientes.append(cliente)
     print("\nCliente criado com sucesso!")
 
+@log_transacao
 def criar_conta(numero_conta, clientes, contas):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
