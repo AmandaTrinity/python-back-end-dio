@@ -14,7 +14,22 @@ menu = """
 [q] Sair
 
 => """
+class ContaIterador:
+    def __init__(self,contas):
+        self.contas = contas
+        self.contador = 0
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            contas = self.contas[self.contador]
+            self.contador += 1
+            return contas
+        except IndexError:
+            raise StopIteration
+        
 #Interface -_> Qualquer coisa que for uma transação no nosso banco precisa obrigatoriamente saber como registrar em uma conta
 class Transacao(ABC):
     @property
@@ -301,9 +316,10 @@ def criar_conta(numero_conta, clientes, contas):
     print("\nConta criada com sucesso!")
 
 def listar_contas(contas):
-    for conta in contas:
+    #utilizar ContaIterador
+    for conta in ContaIterador(contas):
         print("=" * 100)
-        print(f"Agência: {conta.agencia}\tC/C: {conta.numero}\tTitular: {conta.cliente.nome}")
+        print(f"Agência: {conta.agencia}\tC/C: {conta.numero}\tTitular: {conta.cliente.nome}\tSaldo: {conta.saldo}")
 
 def filtrar_cliente(cpf, clientes):
     clientes_filtrados = [cliente for cliente in clientes if cliente.cpf == cpf]
