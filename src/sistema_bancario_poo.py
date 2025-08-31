@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import wraps
-
+from pathlib import Path
 
 menu = """
 [MENU]
@@ -24,9 +24,9 @@ class ContaIterador:
 
     def __next__(self):
         try:
-            contas = self.contas[self.contador]
+            conta = self.contas[self.contador]
             self.contador += 1
-            return contas
+            return conta
         except IndexError:
             raise StopIteration
         
@@ -156,6 +156,8 @@ class ContaCorrente(Conta):
     def nova_conta(cls, cliente: 'Cliente', numero: int, limite: float, limite_saque: int):
         return cls(numero=numero, cliente=cliente, limite=limite, limite_saque=limite_saque)
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__} :( {self.numero}, {self.agencia}, {self.cliente})>'
     def sacar(self,valor):
         numero_saques = len([transacao for transacao in self.historico.transacoes if transacao['tipo'] == Saque.__name__])
 
@@ -209,14 +211,22 @@ class PessoaFisica(Cliente):
     @property
     def data_nascimento(self):
         return self._data_nascimento
+    
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}: ({self.cpf})'
 
 def log_transacao(funcao):
     @wraps(funcao)
-    def exibir_nome_hora(*args, **kwargs):
-        print(f'Nome: {funcao.__name__}')
-        print(f'Hora: {datetime.now().strftime('%d-%m-%Y-%H:%M:%S')}')
-        return funcao(*args, **kwargs)
-    return exibir_nome_hora
+    def wrapper(*args, **kwargs):
+        log_file_path = Path(__file__).parent / "log.txt"
+        timestamp = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        resultado = funcao(*args, **kwargs)
+
+        with open(log_file_path, 'a', encoding='utf-8') as log_file:
+            log_file.write(f"[{timestamp}] Função '{funcao.__name__} exexutada com argumentos {args} e {kwargs}'\n Retornou: {resultado}")
+                           
+        return resultado
+    return wrapper
 
 # Funções de interação com o usuário (adaptadas para POO)
 @log_transacao
