@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from functools import wraps
+from pathlib import Path
 
 menu = """
 [MENU]
@@ -12,7 +14,22 @@ menu = """
 [q] Sair
 
 => """
+class ContaIterador:
+    def __init__(self,contas):
+        self.contas = contas
+        self.contador = 0
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            conta = self.contas[self.contador]
+            self.contador += 1
+            return conta
+        except IndexError:
+            raise StopIteration
+        
 #Interface -_> Qualquer coisa que for uma transação no nosso banco precisa obrigatoriamente saber como registrar em uma conta
 class Transacao(ABC):
     @property
@@ -61,6 +78,11 @@ class Historico:
 
     def adicionar_transacao(self, transacao):
         self._transacoes.append({"tipo": transacao.__class__.__name__,"valor": transacao.valor,"data": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),})
+
+    def gerador_relatorio(self,tipo_transacao=None):
+        for transacao in self._transacoes:
+            if tipo_transacao is None or transacao['tipo'].lower() == tipo_transacao.lower():
+                yield transacao
 
 class Conta:
     def __init__(self, numero: int, cliente: 'Cliente', saldo_inicial: float = 0.0):
@@ -134,6 +156,8 @@ class ContaCorrente(Conta):
     def nova_conta(cls, cliente: 'Cliente', numero: int, limite: float, limite_saque: int):
         return cls(numero=numero, cliente=cliente, limite=limite, limite_saque=limite_saque)
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__} :( {self.numero}, {self.agencia}, {self.cliente})>'
     def sacar(self,valor):
         numero_saques = len([transacao for transacao in self.historico.transacoes if transacao['tipo'] == Saque.__name__])
 
@@ -187,8 +211,25 @@ class PessoaFisica(Cliente):
     @property
     def data_nascimento(self):
         return self._data_nascimento
+    
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}: ({self.cpf})'
+
+def log_transacao(funcao):
+    @wraps(funcao)
+    def wrapper(*args, **kwargs):
+        log_file_path = Path(__file__).parent / "log.txt"
+        timestamp = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        resultado = funcao(*args, **kwargs)
+
+        with open(log_file_path, 'a', encoding='utf-8') as log_file:
+            log_file.write(f"[{timestamp}] Função '{funcao.__name__} exexutada com argumentos {args} e {kwargs}'\n Retornou: {resultado}")
+                           
+        return resultado
+    return wrapper
 
 # Funções de interação com o usuário (adaptadas para POO)
+@log_transacao
 def depositar_valor(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -204,6 +245,7 @@ def depositar_valor(clientes):
     if conta:
         cliente.realizar_transacao(conta, transacao)
 
+@log_transacao
 def sacar_valor(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -219,6 +261,7 @@ def sacar_valor(clientes):
     if conta:
         cliente.realizar_transacao(conta, transacao)
 
+@log_transacao
 def exibir_extrato(clientes):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -232,17 +275,26 @@ def exibir_extrato(clientes):
         return
 
     print("\n================ EXTRATO ================")
-    transacoes = conta.historico.transacoes
 
-    if not transacoes:
-        print("Não foram realizadas movimentações.")
-    else:
-        for transacao in transacoes:
-            print(f"\n{transacao['tipo']}:\n\tValor: R$ {transacao['valor']:.2f}\n\tData: {transacao.get('data', 'N/A')}")
+    tipo_filtro = input("Deseja filtrar o extrato? ([d]eposito, [s]aque, ou [N]ão para todos): ").lower()
+    filtro = None
+    if tipo_filtro == 's':
+        filtro = Saque.__name__
+    elif tipo_filtro == 'd':
+        filtro = Deposito.__name__
+
+    tem_transacoes = False
+    for transacao in conta.historico.gerador_relatorio(tipo_transacao=filtro):
+        print(f"\n{transacao['tipo']}:\n\tValor: R$ {transacao['valor']:.2f}\n\tData: {transacao.get('data', 'N/A')}")
+        tem_transacoes = True
+
+    if not tem_transacoes:
+        print("Não foram realizadas movimentações para a seleção atual.")
 
     print(f"\nSaldo:\n\tR$ {conta.saldo:.2f}")
     print("==========================================")
 
+@log_transacao
 def criar_cliente(clientes):
     cpf = input("Informe o CPF (somente número): ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -259,6 +311,7 @@ def criar_cliente(clientes):
     clientes.append(cliente)
     print("\nCliente criado com sucesso!")
 
+@log_transacao
 def criar_conta(numero_conta, clientes, contas):
     cpf = input("Informe o CPF do cliente: ")
     cliente = filtrar_cliente(cpf, clientes)
@@ -273,9 +326,10 @@ def criar_conta(numero_conta, clientes, contas):
     print("\nConta criada com sucesso!")
 
 def listar_contas(contas):
-    for conta in contas:
+    #utilizar ContaIterador
+    for conta in ContaIterador(contas):
         print("=" * 100)
-        print(f"Agência: {conta.agencia}\tC/C: {conta.numero}\tTitular: {conta.cliente.nome}")
+        print(f"Agência: {conta.agencia}\tC/C: {conta.numero}\tTitular: {conta.cliente.nome}\tSaldo: {conta.saldo}")
 
 def filtrar_cliente(cpf, clientes):
     clientes_filtrados = [cliente for cliente in clientes if cliente.cpf == cpf]
